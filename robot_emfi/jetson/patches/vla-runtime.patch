@@ -1,0 +1,43 @@
+diff --git a/bench/backends/trt_split_smolvla.py b/bench/backends/trt_split_smolvla.py
+index e1dd562..6fd5175 100644
+--- a/bench/backends/trt_split_smolvla.py
++++ b/bench/backends/trt_split_smolvla.py
+@@ -65,7 +65,7 @@ class TrtSplitSmolVLABackend(Backend):
+         self.device = SmolVLADevice(b, self.engines, Ops(self.engines, self.cache_dir),
+                                     graph=self.chain == "graph")
+         r = np.load(b.root / b.info["fixture"]["file"])
+-        pix = r["pixel_values"].astype(np.float32)
++        pix = r["pixel_values"][r["img_masks"].astype(bool)].astype(np.float32)
+         lang = (b.embed_ids(r["lang_tokens"]), r["lang_masks"].astype(bool))
+         state = r["model_state"].astype(np.float32)
+         host = p.sample([p.vision(pix[i:i + 1]) for i in range(len(pix))], lang, state,
+diff --git a/bench/cli.py b/bench/cli.py
+index ef84c5a..065d13b 100644
+--- a/bench/cli.py
++++ b/bench/cli.py
+@@ -75,7 +75,11 @@ class Resolved:
+         self.fps = info.get("fps") or 30
+         self.chunk_size = info.get("chunk_size") or spec.chunk_size or 50
+         self.state_dim = spec.state_dim or 6
+-        self.action_dim = spec.action_dim
++        self.action_dim = (
++            int(info["action_dim"])
++            if spec.family == "smolvla" and info.get("action_dim") is not None
++            else spec.action_dim
++        )
+         self.views = args.views if args.views is not None else spec.image_views
+         self.cam_slots = spec.cam_slots
+         self.tokenizer = spec.tokenizer
+diff --git a/bench/vendor/smolvla_trt.py b/bench/vendor/smolvla_trt.py
+index 44f2f43..73d90d7 100644
+--- a/bench/vendor/smolvla_trt.py
++++ b/bench/vendor/smolvla_trt.py
+@@ -180,7 +180,7 @@ def validate_fixture(bundle: Bundle, policy: Policy) -> dict:
+     if not path.exists():
+         return {"status": "MISSING", "file": str(path)}
+     r = np.load(path)
+-    pix = r["pixel_values"].astype(np.float32)
++    pix = r["pixel_values"][r["img_masks"].astype(bool)].astype(np.float32)
+     embs = [policy.vision(pix[i:i + 1]) for i in range(len(pix))]
+     lang = (bundle.embed_ids(r["lang_tokens"]), r["lang_masks"].astype(bool))
+     act = policy.sample(embs, lang, r["model_state"].astype(np.float32), r["noise"])

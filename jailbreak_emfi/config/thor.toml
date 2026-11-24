@@ -1,0 +1,104 @@
+# Jetson AGX Thor: settings of everything under jetson/thor/ (workers, vLLM server, evaluation,
+# GPU memory check) and of the rendered systemd units (python3 -m jetson.install thor OUT_DIR).
+# Every value is empty on purpose: fill in your own.
+# Environment override: EMFI_<SECTION>__<KEY>=value.
+
+[network]
+listen_host = ""        # Thor's address on the link to the host PC; the workers listen there (IPv4)
+listen_port = ""        # TCP port of the trial protocol (common/protocol.py); must match the host's
+
+[system]
+user = ""               # unix user that runs the services (and owns the models and results)
+home = ""               # that user's home directory (HOME of the services)
+paper_code = ""         # absolute path of jailbreak_emfi/ on Thor (PYTHONPATH and working directory of the units)
+python = ""             # Python 3.12 interpreter for the workers, e.g. the system python3 (absolute path)
+
+[thermal]               # GPU-heavy loops pause while the board is hot
+pause_c = ""            # pause before the next request when the hottest thermal zone is at/above this (deg C)
+resume_c = ""           # ... and continue once it is at/below this (deg C)
+poll_s = ""             # seconds between temperature reads while paused
+
+[gpu_clock]
+gpc_hz = ""             # GPU GPC clock locked by gpu-clock-lock.service (Hz)
+
+[vllm]                  # the vLLM server (jetson/thor/serve_vllm.py) and how the scripts reach it
+venv = ""               # vLLM virtualenv (contains bin/vllm)
+cuda_dir = ""           # CUDA toolkit directory (bin/ptxas, lib64)
+host = ""               # address the vLLM API server binds to
+port = ""               # vLLM API port
+client_host = ""        # address the scripts on Thor use to reach the API (e.g. the loopback address)
+gpu_memory_utilization = ""  # fraction of GPU memory vLLM may take (0..1)
+enforce_eager = ""      # true/false: no CUDA graphs (each layer is its own kernel sequence: steady timing)
+prefix_caching = ""     # true/false: vLLM automatic prefix caching (KV of repeated prompt prefixes reused)
+temperature = ""        # sampling temperature, for the server's generation config and every request
+quantization = ""       # "none" = serve the checkpoint dtype (bf16); "fp8" = vLLM quantizes on load
+weight_check = ""       # true/false: load jetson.thor.weight_check_ext and vLLM's dev-mode routes
+                        # (/collective_rpc, /reset_prefix_cache); needed by the reload worker
+request_timeout_s = ""  # timeout of one HTTP request to vLLM (s)
+startup_retry_s = ""    # seconds between checks while waiting for vLLM to serve the model
+
+# One section per model; the workers accept whichever of these vLLM serves.
+[models.gemma3_1b]
+dir = ""                # checkpoint directory (Hugging Face format)
+served_name = ""        # --served-model-name, the "model" of every request
+unit = ""               # systemd unit of this model's server (rendered by jetson/install.py)
+family = ""             # "gemma" or "llama": raw prompt format of eval/mc_run.py
+
+[models.llama32_1b]
+dir = ""
+served_name = ""
+unit = ""
+family = ""
+
+[prompts]
+file = ""               # prompts, one per line, indexed by the host's prompt slot (JailbreakBench harmful goals)
+jbb_csv = ""            # JailbreakBench harmful-behaviors.csv (eval/jbb_run.py)
+
+[query_trigger]         # jetson/thor/vllm_query_trigger.py (inference-time trials)
+max_tokens = ""         # generated tokens per trial
+queries = ""            # trials per controller connection before the worker exits (systemd restarts it)
+output = ""             # JSONL file, one record per trial (appended)
+reload_token = ""       # corruption watchdog: the word a corrupted model repeats
+reload_threshold = ""   # restart the vLLM unit when a response has the word this many times (<= 0: off)
+
+[reload_trigger]        # jetson/thor/vllm_reload_trigger.py (weight-reload trials)
+max_tokens = ""         # generated tokens per trial when reload_only = false
+queries = ""            # trials per controller connection
+output = ""             # JSONL file of the query records (reload_only = false)
+weight_report_log = ""  # JSONL file: every weight check that was not MATCH, with the changed tensors
+reload_only = ""        # true/false: a trial is only the reload (no prompt)
+reload_every = ""       # with prompts: reload after every N-th trial (<= 0: only after corruption)
+reload_timeout_s = ""   # timeout of one in-place reload / weight-check RPC (s)
+drop_cache = ""         # true/false: evict the checkpoint from the page cache before each reload (read from NVMe)
+baseline_from_reload = ""  # true/false: weight reference from a clean reload (required with fp8) instead of the file
+zero_before_reload = "" # true/false: zero the weights before each reload (lost writes then show as zeros)
+stop_on_change = ""     # true/false: exit (status 3, unit stays down) after a CHANGED weight report
+baseline_verify_tries = ""  # clean reloads that may be tried until one matches the baseline at start
+cpu_performance_governor = ""  # true/false: unit sets the CPU governor to performance (steady reload timing)
+free_run_repeats = ""   # --free-run only: consecutive trials per prompt
+free_run_delay_s = ""   # --free-run only: pause between trials (s)
+
+[weight_check]          # inside the vLLM worker (jetson/thor/weight_check_ext.py)
+dump_dir = ""           # optional: directory for .npz dumps of every changed element ("" = no dumps)
+dump_max_elems = ""     # dump only tensors with at most this many changed elements (skips full wipes)
+
+[memfault]              # jetson/thor/gpu_memfault (GPU memory check, runs as root)
+nvcc = ""               # nvcc used by the Makefile
+cuda_arch = ""          # GPU architecture for nvcc -arch
+binary = ""             # path of the built gpu_memfault
+gib = ""                # buffer size (GiB)
+window_s = ""           # seconds of continuous GPU verification per trial (must cover the glitch delay)
+pattern = ""            # "const" (0x55..55) or "index" (word index encoded: shows where a misread came from)
+mem = ""                # "host" (pinned host memory: true PA via pagemap) or "device" (cuMemAlloc: no PA)
+log = ""                # flips TSV (appended; <log>_ecc.tsv and <log>_win.tsv next to it)
+ecc_polling = ""        # true/false: snapshot the GPU ECC/error registers around every window
+bar0 = ""               # GPU BAR0 resource file for ecc_polling (/sys/bus/pci/devices/<gpu>/resource0)
+
+[eval]                  # jetson/thor/eval/
+jbb_max_tokens = ""     # max tokens per JailbreakBench answer (jbb_run.py)
+sanity_max_tokens = ""  # max tokens per sanity answer (eval_model.py)
+mc_parallel_requests = ""  # concurrent requests of mc_run.py
+
+[freerun]               # jetson/thor/jbb_freerun.py (no-pulse baseline)
+reps = ""               # answers per prompt
+max_tokens = ""         # max tokens per answer (as query_trigger.max_tokens for a matching baseline)

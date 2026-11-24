@@ -1,0 +1,83 @@
+# Host PC setup: instruments, network, boards. Read by host/ (with one experiments/*.toml on top).
+# Every value is empty on purpose: fill in your setup.
+# Booleans: true/false. Lists: [a, b, ...]. Env override: EMFI_<SECTION>__<KEY> (e.g. EMFI_NETWORK__HOST_INTERFACE).
+
+[network]
+socket_timeout_s = ""     # s; receive timeout per trial. A timeout counts as a hang: the board is reset
+connect_retry_s = ""      # s; wait between connection attempts to the worker (e.g. while it reboots)
+connect_settle_s = ""     # s; wait after connecting, before the first trial
+host_interface = ""       # host network interface to the Jetson (USB Ethernet); brought up again after a reset
+host_address = ""         # host address with prefix on that interface (e.g. 192.0.2.10/24), re-added after a reset
+sudo_password_env = ""    # NAME of the env var that holds this PC's sudo password (for boardctl and ip; the
+                          # password itself is never written to a file). Empty: commands run without sudo -S
+
+[boards.orin]             # Jetson Orin Nano
+target_host = ""          # IP of the Orin (the worker is the TCP server)
+target_port = ""          # worker TCP port (common/protocol.py)
+ssh_host = ""             # ssh alias/host of the Orin (thermal readout, result fetch)
+reset_method = ""         # "serial": Arduino on J14 (board/arduino_ctr) | "command": run reset_command
+reset_command = ""        # argv list, for reset_method = "command"
+serial_port = ""          # Arduino serial device (e.g. /dev/ttyACM0); the user needs access (dialout group)
+serial_baud = ""          # Arduino serial baud rate (must match the sketch)
+serial_message = ""       # message that makes the sketch power-cycle the board (must match the sketch)
+serial_open_wait_s = ""   # s; wait after opening the port (opening resets the Arduino) before sending
+boot_wait_s = ""          # s; wait after the reset before bringing the Ethernet link up and reconnecting
+
+[boards.thor]             # Jetson AGX Thor
+target_host = ""          # IP of the Thor
+target_port = ""          # worker TCP port
+ssh_host = ""             # ssh alias of the Thor (thermal readout; the hunt's remote commands)
+reset_method = ""         # "command" (boardctl) or "serial"
+reset_command = ""        # argv list, e.g. [".../boardctl", "-t", "<board>", "power_on"]; needs root (sudo)
+serial_port = ""
+serial_baud = ""
+serial_message = ""
+serial_open_wait_s = ""
+boot_wait_s = ""          # s
+
+[glitcher]                # Keysight Riscure VC Glitcher, embedded-VCC mode driving the EMFI transient probe
+device_index = ""         # VC Glitcher device index (SDK device list)
+vcc_v = ""                # V; set_vcc_glitch_parameter normal VCC
+clk_high_v = ""           # V; set_vcc_glitch_parameter clock-high voltage
+initial_glitch_v = ""     # V; glitch voltage at start-up (each trial sets its own amplitude)
+
+[scope]                   # Teledyne LeCroy T3DSO3000(HD) over VISA; its interval trigger on `channel` drives the glitcher
+enabled = ""              # true: arm a single acquisition every trial
+resource = ""             # VISA resource (e.g. TCPIP::<ip>::INSTR). Leave empty to find the scope over USB:
+usb_vendor_id = ""        #   USB vendor id (hex), for auto-detect when resource is empty
+usb_product_id = ""       #   USB product id (hex)
+usb_serial = ""           #   USB serial number (builds USB0::...::INSTR if the scan finds nothing)
+visa_backend = ""         # optional pyvisa backend (e.g. "@py"); empty = pyvisa's default
+timeout_ms = ""           # ms; VISA I/O timeout (a 10 M-point readout takes a few seconds)
+channel = ""              # channel with the near-field probe (trigger source, saved by capture), e.g. C2
+                          # (whether to capture: scope.capture in the experiment TOML)
+capture_dir = ""          # directory for t<trial>.png/.npz (set per run, e.g. EMFI_SCOPE__CAPTURE_DIR=run/scope)
+capture_wait_s = ""       # s; max wait for the single acquisition to finish before reading it
+apply_settings = ""       # true: write the settings below at start; false: they are set on the front panel
+timebase_s_per_div = ""   # s/div (10 divisions)
+horizontal_delay_s = ""   # s; time of the screen centre after the trigger
+memory_depth = ""         # acquisition memory depth (e.g. 10M); with the timebase sets the sample rate
+channel_v_per_div = ""    # V/div of `channel`
+channel_offset_v = ""     # V; vertical offset of `channel`
+trigger_slope = ""        # interval trigger slope (RISing/FALLing)
+trigger_limit = ""        # interval limit (e.g. GREATerthan)
+trigger_interval_s = ""   # s; interval lower limit (quiet time before the edge)
+trigger_level_v = ""      # V; trigger level
+trigger_coupling = ""     # DC/AC
+trigger_mode = ""         # trigger mode outside the per-trial SINGLE acquisitions (e.g. AUTO)
+
+[stage]                   # Riscure XYZ stage (Inspector); grid defaults shown in Inspector's dialog
+table_name = ""           # stage name as Inspector lists it (goto_xyz.py)
+x_stops = ""              # grid stops W-E (dialog default)
+y_stops = ""              # grid stops N-S (dialog default)
+scan_count = ""           # scans over the grid (dialog default)
+hop_height = ""           # stage hop height between positions (dialog default)
+
+[thermal]                 # pacing by board temperature (read over ssh); experiments switch it on/off
+pause_c = ""              # deg C; before a trial, pause if the hottest thermal zone is at or above this
+resume_c = ""             # deg C; ... until it is at or below this
+poll_s = ""               # s; temperature poll interval while paused
+ssh_timeout_s = ""        # s; ssh connect timeout for the readout
+
+[log]
+trial_log_dir = ""        # directory for trial CSVs when --trial-log is not given

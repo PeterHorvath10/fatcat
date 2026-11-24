@@ -1,0 +1,21 @@
+[Unit]
+Description=Max performance: MAXN_SUPER power mode + jetson_clocks (static max CPU/GPU/EMC clocks)
+# nvpmodel.service re-applies the stored power mode at boot and resets the clocks;
+# lock them only after it has run.
+After=nvpmodel.service
+Wants=nvpmodel.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/nvidia
+# jetson_clocks keeps its GPU/fan state files under ${HOME}; systemd leaves HOME unset.
+Environment=HOME=/root
+# Mode 2 = MAXN_SUPER in /etc/nvpmodel.conf (nvpmodel_p3767_0003_super.conf).
+ExecStartPre=/usr/sbin/nvpmodel -m 2
+ExecStart=/usr/bin/jetson_clocks
+# `systemctl stop jetson-max-perf` returns to the dynamic clocks saved at install time.
+ExecStop=/usr/bin/jetson_clocks --restore /var/lib/jetson-max-perf/l4t_dfs.conf
+
+[Install]
+WantedBy=multi-user.target

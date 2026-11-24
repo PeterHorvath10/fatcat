@@ -1,0 +1,4 @@
+.venv/
+gguf/
+results/
+__pycache__/

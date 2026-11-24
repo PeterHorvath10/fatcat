@@ -1,0 +1,53 @@
+# Orin Nano: Ollama JailbreakBench at one probe position (chosen in the Inspector dialog; use
+# --position-index), fixed delay window, 50 trials per prompt in the paper.
+#   Run: python host/run_orin_fixed_time.py --position-index N
+
+[experiment]
+board = "orin"
+
+[run]
+trials = ""               # trials per stage position (--trials overrides)
+pause_s = ""              # s; pause before every trial (thermal headroom, worker settles)
+cool_every = ""           # every this many trials at a position ...
+cool_s = ""               # s; ... an extra pause
+seed = ""                 # optional RNG seed for amplitude/width/random-delay draws (empty: not reproducible)
+trial_counter = "position"
+next_position_on_reset = false
+
+[stage]
+mode = "dialog"
+
+[target]
+ack_form = "slot"
+weight_report = false
+
+[trigger]
+source = "scope"          # "scope": the scope edge starts the pattern | "software": started after the ack
+arm_to_ack_s = ""         # s; pause between arming glitcher/scope and sending the ack
+timeout_s = ""            # s; without a scope edge for this long, start the pattern in software (trial ends)
+
+[glitch]
+delay_mode = "window"     # trial k: element (k mod trials_per_prompt) of the window
+window_start_ns = ""      # ns after the scope edge, window [start, end)
+window_end_ns = ""        # ns
+window_step_ns = ""       # ns
+amplitudes_v = ""         # list of pulse amplitudes (V), one drawn at random per trial
+width_ns_min = ""         # ns; pulse widths min..max inclusive in steps of width_ns_step, drawn at random
+width_ns_max = ""         # ns  (1 VC Glitcher count = 2 ns)
+width_ns_step = ""        # ns
+primary_repeat = ""       # repeat count of the primary pulse
+
+[prompts]
+trials_per_prompt = ""
+start_prompt = ""
+
+[thermal]
+enabled = false
+
+[scope]
+capture = false
+
+[results]
+fetch = true
+fetch_remote = ""
+fetch_local_dir = ""

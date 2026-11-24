@@ -1,0 +1,55 @@
+# Jetson Orin Nano: settings of everything under jetson/orin/ (memory-check and Ollama workers) and of the
+# rendered systemd units (python3 -m jetson.install orin OUT_DIR).
+# Every value is empty on purpose: fill in your own.
+# Environment override: EMFI_<SECTION>__<KEY>=value.
+
+[network]
+listen_host = ""        # Orin's address on the link to the host PC; the workers listen there (IPv4)
+listen_port = ""        # TCP port of the trial protocol (common/protocol.py); must match the host's
+
+[system]
+user = ""               # unix user that runs the services (member of the video and gpio groups)
+home = ""               # that user's home directory (HOME of the services)
+paper_code = ""         # absolute path of jailbreak_emfi/ on the Orin (PYTHONPATH and working directory)
+python = ""             # Python 3.10 interpreter with numpy and cuda-python (absolute path)
+
+[gpio]
+chip = ""               # GPIO chip device of the marker line (e.g. /dev/gpiochipN)
+consumer = ""           # label under which the line is requested
+
+[memfault]              # jetson/orin/memfault.py (GPU memory check with physical-address capture)
+gpio_line = ""          # GPIO line driven high during each glitched pass
+gib = ""                # buffer size (GiB)
+blocks = ""             # CUDA grid size (blocks)
+threads = ""            # threads per block (power of two)
+seed = ""               # pattern seed (integer, may be written as a hex string "0x...")
+passes = ""             # verification passes (= trials) per worker run
+data_mismatch_capacity = ""  # words the exact scan records per failed pass
+log_dir = ""            # directory of the pass/mismatch logs and run_capture_join.tsv
+map_dir = ""            # root of the per-run physical page captures
+pa_query_tool = ""      # built orin_gpu_pa/orin_gpu_pa_query
+pa_module = ""          # built orin_gpu_pa/orin_gpu_pa.ko (loaded by orin-gpu-pa.service)
+
+[ollama]                # jetson/orin/ollama_query_trigger.py (inference-time trials)
+host = ""               # Ollama API address
+port = ""               # Ollama API port
+model = ""              # Ollama model tag
+keep_alive = ""         # Ollama keep_alive when loading (-1 = keep loaded)
+runner_host = ""        # address of Ollama's llama-server runner
+runner_port = ""        # its port; 0 = find the running llama-server process and read its --port
+prompt_template = ""    # chat turn wrapped around the prompt for the runner; must contain {prompt}
+max_tokens = ""         # generated tokens per trial (n_predict)
+temperature = ""        # sampling temperature
+seed = ""               # sampling seed
+cache_prompt = ""       # true/false: llama-server reuses the cached prompt KV
+prompt_file = ""        # prompts, one per line
+follow_prompt_slot = "" # true/false: the host's prompt slot picks the prompt; false: always prompt_index
+prompt_index = ""       # 0-based line of prompt_file used when follow_prompt_slot = false
+reload_every = ""       # also reload the model after every N trials (0 = only after a corrupted answer)
+reload_token = ""       # special token a corrupted model emits; an answer containing it triggers a reload
+queries = ""            # trials per controller connection
+output = ""             # JSONL file, one record per trial (appended)
+gpio_line = ""          # GPIO line driven high during each request
+request_timeout_s = ""  # timeout of one request (s)
+startup_timeout_s = ""  # how long to wait for Ollama, the model load and the runner (s)
+startup_retry_s = ""    # seconds between those checks

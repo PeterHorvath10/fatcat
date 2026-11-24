@@ -1,0 +1,14 @@
+[Unit]
+Description=Load the read-only Orin CUDA virtual-to-physical mapping probe
+After=systemd-modules-load.service
+Before=memfault.service
+ConditionPathExists=@PA_MODULE@
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/load-orin-gpu-pa start @PA_MODULE@
+ExecStop=/usr/local/sbin/load-orin-gpu-pa stop @PA_MODULE@
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

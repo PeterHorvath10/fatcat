@@ -1,0 +1,24 @@
+# Rendered by jetson/install.py once per [models.*] section of config/thor.toml.
+[Unit]
+Description=vLLM server for @MODEL_KEY@
+After=network.target
+Conflicts=@CONFLICTS@
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=@PAPER_CODE@
+Environment=HOME=@HOME@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=@PAPER_CODE@
+ExecStart=@PYTHON@ -m jetson.thor.serve_vllm --model @MODEL_KEY@
+Restart=on-failure
+RestartSec=10s
+KillSignal=SIGINT
+TimeoutStopSec=120s
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+[Unit]
+Description=Orin GPU memory-check worker with physical-address capture
+Requires=orin-gpu-pa.service
+After=network-online.target jetson-clocks.service orin-gpu-pa.service
+Wants=network-online.target
+# One owner of the trial port (and of the GPU memory) at a time.
+Conflicts=ollama.service ollama-query-trigger.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+SupplementaryGroups=video gpio
+WorkingDirectory=@PAPER_CODE@
+Environment=HOME=@HOME@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=@PAPER_CODE@
+ExecStart=@PYTHON@ -m jetson.orin.memfault
+Restart=always
+RestartSec=5s
+KillSignal=SIGINT
+TimeoutStopSec=30s
+UMask=0077
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target

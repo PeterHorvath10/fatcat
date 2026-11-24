@@ -1,0 +1,7 @@
+# Versions used for the paper (Python 3.12, CUDA 13). torch: install the build for your CUDA version.
+torch==2.11.0
+transformers==5.14.1
+accelerate==1.14.0
+safetensors==0.8.0
+numpy==1.26.4
+gguf==0.19.0

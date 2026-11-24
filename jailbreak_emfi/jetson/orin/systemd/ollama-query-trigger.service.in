@@ -1,0 +1,26 @@
+[Unit]
+Description=TCP-triggered Ollama query worker (inference-time EMFI trials)
+Requires=ollama.service
+After=network-online.target ollama.service
+Wants=network-online.target
+Conflicts=memfault.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+SupplementaryGroups=gpio
+WorkingDirectory=@PAPER_CODE@
+Environment=HOME=@HOME@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=@PAPER_CODE@
+ExecStart=@PYTHON@ -m jetson.orin.ollama_query_trigger
+Restart=always
+RestartSec=5s
+KillSignal=SIGINT
+TimeoutStopSec=30s
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

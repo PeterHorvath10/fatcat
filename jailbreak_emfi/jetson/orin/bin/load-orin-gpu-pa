@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Load/unload the orin_gpu_pa probe module: load-orin-gpu-pa start|stop MODULE.ko
+# (MODULE = memfault.pa_module in config/orin.toml). Run as root (orin-gpu-pa.service).
+# The stock nvgpu module keeps the functions the probe needs private; their addresses change every boot,
+# so they are read from /proc/kallsyms and passed to the module as parameters.
+set -euo pipefail
+
+module_name="orin_gpu_pa"
+device_path="/dev/orin_gpu_pa"
+action="${1:-}"
+module_path="${2:-}"
+
+is_loaded() {
+    awk -v wanted="$module_name" '$1 == wanted { found=1 } END { exit !found }' /proc/modules
+}
+
+case "$action" in
+    start)
+        test -f "$module_path"
+        running_kernel="$(uname -r)"
+        module_vermagic="$(modinfo -F vermagic "$module_path")"
+        if [[ "${module_vermagic%% *}" != "$running_kernel" ]]; then
+            echo "module vermagic mismatch: $module_vermagic vs $running_kernel" >&2
+            exit 1
+        fi
+        if ! is_loaded; then
+            get_pte_addr="$(awk '$3 == "nvgpu_get_pte" { print "0x" $1; exit }' /proc/kallsyms)"
+            as_ops_addr="$(awk '$3 == "gk20a_as_ops" { print "0x" $1; exit }' /proc/kallsyms)"
+            find_mapped_addr="$(awk '$3 == "nvgpu_vm_find_mapped_buf_range" { print "0x" $1; exit }' /proc/kallsyms)"
+            test -n "$get_pte_addr"
+            test -n "$as_ops_addr"
+            test -n "$find_mapped_addr"
+            insmod "$module_path" \
+                get_pte_addr="$get_pte_addr" \
+                as_ops_addr="$as_ops_addr" \
+                find_mapped_addr="$find_mapped_addr"
+        fi
+        test -c "$device_path"
+        chgrp video "$device_path"
+        chmod 0660 "$device_path"
+        ;;
+    stop)
+        if is_loaded; then
+            rmmod "$module_name"
+        fi
+        ;;
+    *)
+        echo "usage: $0 start|stop MODULE.ko" >&2
+        exit 2
+        ;;
+esac

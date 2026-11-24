@@ -1,0 +1,6 @@
+site_local.py
+__pycache__/
+out/
+
+# the 8 reference observations are part of the release (the repository ignores *.npz elsewhere)
+!/data/traces/*/trace.npz

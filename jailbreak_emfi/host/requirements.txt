@@ -1,0 +1,9 @@
+# Host PC (Python 3.10). Not on PyPI, from the vendors: the Keysight VC Glitcher SDK (vcglitchersdk) and
+# the Riscure Inspector Python API (riscure-inspector wheel shipped with Inspector FI, install it from your
+# Inspector installation's python-api/ folder).
+numpy==2.2.6
+pyvisa
+pyvisa-py
+pyusb
+pyserial
+tomli; python_version < "3.11"

@@ -1,0 +1,28 @@
+[Unit]
+Description=GPU EMFI memory check (true-PA DRAM channel mapping)
+Wants=network-online.target
+After=network-online.target
+# The vLLM workers use the same trial port; the vLLM servers hold the memory.
+Conflicts=vllm-query-trigger.service vllm-reload-trigger.service @MODEL_UNITS@
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+# root: /proc/self/pagemap PFNs (true DRAM PA) and the GPU BAR0 registers
+User=root
+Group=root
+WorkingDirectory=@PAPER_CODE@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=@PAPER_CODE@
+ExecStart=@PYTHON@ -m jetson.thor.gpu_memfault.launch
+Restart=on-failure
+RestartSec=5s
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+KillSignal=SIGINT
+# freeing a buffer of tens of GiB takes over a minute; a SIGKILL during it leaves the GPU driver broken
+# until reboot
+TimeoutStopSec=300s
+
+[Install]
+WantedBy=multi-user.target

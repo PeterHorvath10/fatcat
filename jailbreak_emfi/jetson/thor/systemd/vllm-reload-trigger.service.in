@@ -1,0 +1,28 @@
+[Unit]
+Description=TCP-triggered vLLM worker that reloads the weights from disk in every trial
+After=network-online.target
+Wants=network-online.target
+# One owner of the trial port at a time.
+Conflicts=vllm-query-trigger.service gpu-memfault.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=@PAPER_CODE@
+Environment=HOME=@HOME@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=@PAPER_CODE@
+@CPU_GOVERNOR_EXEC_START_PRE@
+ExecStart=@PYTHON@ -m jetson.thor.vllm_reload_trigger
+Restart=always
+RestartSec=5s
+# reload_trigger.stop_on_change: exit status 3 = weights CHANGED, stay stopped
+RestartPreventExitStatus=3
+KillSignal=SIGINT
+TimeoutStopSec=30s
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

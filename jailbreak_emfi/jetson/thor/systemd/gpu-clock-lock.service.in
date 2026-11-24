@@ -1,0 +1,13 @@
+[Unit]
+Description=Lock the GPU GPC clock to a fixed frequency
+After=multi-user.target jetson-clocks.service nvpmodel.service
+Wants=jetson-clocks.service
+ConditionPathExists=/sys/class/devfreq/gpu-gpc-0
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@PAPER_CODE@/jetson/thor/bin/lock_gpu_clock.sh @GPU_CLOCK_HZ@
+
+[Install]
+WantedBy=multi-user.target

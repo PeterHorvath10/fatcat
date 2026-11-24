@@ -1,0 +1,3 @@
+# /etc/sudoers.d/vllm-restart: lets the query worker restart a vLLM unit (corruption watchdog) without a
+# password. Install with: sudo visudo -cf FILE && sudo install -m 0440 FILE /etc/sudoers.d/vllm-restart
+@SUDOERS_RULES@

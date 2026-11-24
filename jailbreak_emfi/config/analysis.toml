@@ -1,0 +1,81 @@
+# Settings of the analysis scripts (analysis/). Every value is left empty on purpose: fill in your own.
+# Lists are TOML arrays (an empty array [] counts as "not set"). Times are in seconds, voltages in volts.
+
+[judge]                       # analysis.judge.judge (LLM judge through Ollama)
+ollama_url = ""               # chat endpoint of the Ollama server, e.g. http://<host>:<port>/api/chat
+models = []                   # judge model names as Ollama knows them (each one labels every answer)
+workers = ""                  # parallel requests per judge model
+request_timeout_s = ""        # s, one judge request
+attempts = ""                 # tries per answer (network error, HTTP 429, or no label in the reply)
+temperature = ""              # judge sampling temperature
+max_rounds = ""               # repeat a file until no UNCLEAR label is left, at most this often
+round_pause_s = ""            # s, pause between such rounds (rate limits)
+
+[keyword]                     # analysis.keyword (refusal-keyword score, "Kw. ref.")
+prefix_chars = ""             # look for a refusal phrase in the first this many characters of an answer
+min_words = ""                # coherent: at least this many words ...
+max_top_word_share = ""       # ... and the most frequent word below this share of all words
+
+[scope]                       # analysis.scope.trace: layer bursts and pulse position in the near-field traces
+rms_bin_s = ""                # s, rms bin width
+idle_floor_v = ""             # V, a trace whose top rms level is below this has no GPU activity
+top_percentile = ""           # percentile of the bin rms that defines a trace's top level
+active_frac_of_top = ""       # a bin is active above this fraction of the top level
+max_gap_bins = ""             # a burst ends after more than this many inactive bins
+min_burst_s = ""              # s, shorter bursts are slivers, not layers
+min_burst_end_s = ""          # s relative to the trigger, bursts ending before this are ignored
+pulse_latency_s = ""          # s, the pulse sits this long after the nominal glitcher delay
+pulse_search_s = ""           # s, look for the pulse's |v| peak within +- this
+workers = ""                  # processes reading traces in parallel
+
+# One table per served model: what a regular layer sequence looks like (burst k = layer k).
+[layer_rules.llama]
+name = ""                     # name in reports
+served_model = ""             # model name as in results.jsonl
+min_bursts = ""               # at least this many bursts
+first_burst_max_s = ""        # s, |start of the first burst| below this
+spacing_min_s = ""            # s, start-to-start spacing of consecutive bursts above this ...
+spacing_max_s = ""            # s, ... and below this
+gate_up_frac = ""             # fraction of a burst that is gate_up_proj (empty: do not name the matrix)
+
+[layer_rules.gemma]
+name = ""
+served_model = ""
+min_bursts = ""
+first_burst_max_s = ""
+spacing_min_s = ""
+spacing_max_s = ""
+gate_up_frac = ""
+
+[timing]                      # analysis.scope.layer_timing_table
+layer = ""                    # layer whose burst is timed
+late_start_s = ""             # s, a trace whose first burst starts after this counts as a late start
+min_bursts = ""               # use only regular traces with at least this many bursts (shorter ones are cut off)
+
+[trigger_test]                # analysis.scope.trigger_test (talks to the scope and to vLLM)
+out_dir = ""                  # where captures/ and results_*.json go
+scope_resource = ""           # VISA resource of the oscilloscope
+visa_backend = ""             # pyvisa backend, e.g. @py
+scope_timeout_ms = ""         # ms, VISA timeout
+scope_channel = ""            # near-field probe channel, e.g. C2
+vllm_url = ""                 # chat-completions URL of the Jetson's vLLM server
+model = ""                    # served model name
+prompts_file = ""             # JailbreakBench harmful prompts, one per line
+n_prompts = ""                # use the first this many prompts, in turn
+max_tokens = ""               # output tokens per request
+temperature = ""              # sampling temperature
+request_timeout_s = ""        # s
+trigger_polls = ""            # poll the trigger status at most this often ...
+poll_s = ""                   # s, ... this far apart
+settle_s = ""                 # s, wait after changing the trigger setting
+pause_s = ""                  # s, wait between requests
+min_burst_end_s = ""          # s, keep bursts ending after this (also those before the trigger)
+after_trigger_slack_s = ""    # s, "first burst after the trigger" may start this much before it
+
+[paper]                       # analysis.paper_numbers: the inputs of the paper's numbers
+out_dir = ""                  # where reports are written (never inside a run folder)
+runs = []                     # EMFI run folders (judge/labels, scope/, results.jsonl)
+baseline_labels = []          # per run (same order as runs): judge labels of that model's no-pulse baseline
+                              # (tag nopulse) for the optional column, "" where there is none
+rejudge_labels = ""           # judge labels of the weight-wipe answer sets (tab:emfi-judged-outcomes)
+first_k = []                  # also count with only the first K attempts per prompt (Trials/Prompt)

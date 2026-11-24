@@ -1,0 +1,52 @@
+# Thor: XYZ scan with the gpu-memfault memory-check workload (no prompts). Each trial the worker fills
+# and checks a pinned buffer; the pulse lands at a random delay in the window. After a hang the scan moves
+# on to the next position.
+# Run: python host/run_thor_memfault_xyz.py --stops XxY [--trials N]
+
+[experiment]
+board = "thor"
+
+[run]
+trials = ""               # trials per stage position (--trials overrides)
+pause_s = ""              # s; pause before every trial (thermal headroom, worker settles)
+cool_every = ""           # every this many trials at a position ...
+cool_s = ""               # s; ... an extra pause
+seed = ""                 # optional RNG seed for amplitude/width/random-delay draws (empty: not reproducible)
+trial_counter = "position"
+next_position_on_reset = true
+
+[stage]
+mode = "dialog"
+
+[target]
+ack_form = "short"        # attempt + collection id only
+weight_report = false
+
+[trigger]
+source = "software"       # the worker's check window is long (seconds): start at a fixed time after the ack
+arm_to_ack_s = ""         # s
+timeout_s = ""            # s; (used with source = "scope")
+software_delay_s = ""     # s after the ack; the glitch delay adds on top
+soft_busy_timeout_s = ""  # s; give up waiting for the pattern after a software start
+
+[glitch]
+delay_mode = "random"     # uniform random delay in the window
+window_start_ns = ""      # ns
+window_end_ns = ""        # ns
+window_step_ns = ""       # ns
+amplitudes_v = ""         # list of pulse amplitudes (V), one drawn at random per trial
+width_ns_min = ""         # ns; pulse widths min..max inclusive in steps of width_ns_step, drawn at random
+width_ns_max = ""         # ns  (1 VC Glitcher count = 2 ns)
+width_ns_step = ""        # ns
+primary_repeat = ""       # repeat count of the primary pulse
+
+[thermal]
+enabled = true            # Thor overheats under back-to-back GPU load (see [thermal] in host.toml)
+
+[scope]
+capture = false
+
+[results]
+fetch = true
+fetch_remote = ""         # scp source of the worker's flip log (user@host:path)
+fetch_local_dir = ""
